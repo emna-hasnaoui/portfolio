@@ -1,20 +1,22 @@
 ---
-import '@fontsource-variable/newsreader/wght.css';
-import '@fontsource/ibm-plex-sans/400.css';
-import '@fontsource/ibm-plex-sans/500.css';
-import '@fontsource/ibm-plex-mono/400.css';
+// Self-hosted fonts, only the styles in use; all load with font-display: swap.
+import '@fontsource/instrument-serif/400.css';
+import '@fontsource/instrument-serif/400-italic.css';
+import '@fontsource-variable/geist/wght.css'; // one file covers 400, 500 and 600
+import '@fontsource/geist-mono/400.css';
 import '../styles/site.css';
 
 // Preloaded so the first layout already has the real fonts (no swap re-layout).
-import serifUrl from '@fontsource-variable/newsreader/files/newsreader-latin-wght-normal.woff2?url';
-import sansUrl from '@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2?url';
-import sans500Url from '@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-500-normal.woff2?url';
-import monoUrl from '@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2?url';
+import serifUrl from '@fontsource/instrument-serif/files/instrument-serif-latin-400-normal.woff2?url';
+import serifItalicUrl from '@fontsource/instrument-serif/files/instrument-serif-latin-400-italic.woff2?url';
+import sansUrl from '@fontsource-variable/geist/files/geist-latin-wght-normal.woff2?url';
+import monoUrl from '@fontsource/geist-mono/files/geist-mono-latin-400-normal.woff2?url';
 
 import Tags from '../components/Tags.astro';
 import MiniFlow from '../components/MiniFlow.astro';
 import ThesisFlow from '../components/ThesisFlow.astro';
 import { slug } from '../lib/slug';
+import { emph } from '../lib/emph';
 import { site, contact, hero, work, experience, skills, education } from '../content';
 
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
@@ -38,17 +40,17 @@ const links = [
 ---
 
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{site.title}</title>
     <meta name="description" content={site.description} />
-    <meta name="theme-color" content="#f6f3ec" />
+    <meta name="theme-color" content="#f4f1ea" />
     <meta property="og:title" content={site.title} />
     <meta property="og:description" content={site.description} />
     <meta property="og:type" content="profile" />
-    {[serifUrl, sansUrl, sans500Url, monoUrl].map((u) => <link rel="preload" as="font" type="font/woff2" href={u} crossorigin />)}
+    {[serifUrl, serifItalicUrl, sansUrl, monoUrl].map((u) => <link rel="preload" as="font" type="font/woff2" href={u} crossorigin />)}
     <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
     <script is:inline>
       // Runs before first paint: marks JS as available and applies the stored
@@ -86,7 +88,7 @@ const links = [
       <!-- ============================== Hero ============================== -->
       <section class="hero grid">
         <div class="hero-text">
-          <h1>{site.name.split(' ').map((part, i) => <>{i > 0 && <br />}{part}</>)}</h1>
+          <h1>{site.name.split(' ').map((part, i) => <>{i > 0 && <br />}{i > 0 ? <em>{part}</em> : part}</>)}</h1>
           <p class="lede">{hero.sentence}</p>
           <p class="next">{hero.lookingFor}</p>
           <ul class="links">
@@ -106,7 +108,7 @@ const links = [
 
       <!-- ========================== Selected work ========================= -->
       <section class="section" id="work" data-reveal>
-        <h2>{work.heading}</h2>
+        <h2 set:html={emph(work.heading)} />
 
         <article class="feature grid" data-tags={tagAttr(work.featured.tags)}>
           <div class="feature-head">
@@ -158,7 +160,7 @@ const links = [
 
       <!-- =========================== Experience =========================== -->
       <section class="section" id="experience" data-reveal>
-        <h2>{experience.heading}</h2>
+        <h2 set:html={emph(experience.heading)} />
         <ol class="timeline">
           {experience.entries.map((e) => (
             <li class="grid" data-tags={tagAttr(e.tags)}>
@@ -176,7 +178,7 @@ const links = [
 
       <!-- ============================= Skills ============================= -->
       <section class="section" id="skills" data-reveal>
-        <h2>{skills.heading}</h2>
+        <h2 set:html={emph(skills.heading)} />
         <dl class="skills">
           {skills.groups.map((g) => (
             <div class="grid">
@@ -189,7 +191,7 @@ const links = [
 
       <!-- ==================== Education & certificates ==================== -->
       <section class="section" id="education" data-reveal>
-        <h2>{education.heading}</h2>
+        <h2 set:html={emph(education.heading)} />
         <div class="grid edu">
           <div class="edu-a">
             <h3 class="eyebrow">{education.degreesLabel}</h3>
@@ -230,7 +232,7 @@ const links = [
 
       <!-- ============================= Contact ============================ -->
       <section class="section contact" id="contact" data-reveal>
-        <h2>{contact.heading}</h2>
+        <h2 set:html={emph(contact.heading)} />
         <p class="lede">{contact.sentence}</p>
         <p class="contact-mail">
           {isPlaceholder(contact.email)

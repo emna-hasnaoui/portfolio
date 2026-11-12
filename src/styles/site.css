@@ -1,33 +1,66 @@
 /* ==========================================================================
    site.css — editorial portfolio layout on a 12-column grid.
-   One accent colour (burnt orange), used only for links and highlights.
-   Small accent text uses the same value: it is 5:1 on the light background
-   and 7:1 on the dark one, so it passes WCAG AA in both themes.
+
+   Every colour is one of the variables below; nothing else in this file
+   names a colour. The accent is reserved for three things: link hover and
+   focus, the active tag / highlight, and the hovered pipeline stage.
+
+   Contrast (WCAG AA needs 4.5:1 for text):
+     light  --muted on --bg 4.8   --accent on --bg 4.9   --accent-text on --accent-soft 5.1
+     dark   --muted on --bg 6.2   --accent on --bg 6.4   --accent-text on --accent-soft 5.0
    ========================================================================== */
 
 :root {
-  --bg: #f6f3ec;
-  --ink: #1c1a17;
-  --ink-2: #5d574d;
-  --rule: rgba(28, 26, 23, 0.2);
-  --accent: #b5410c;
-  --tint: rgba(181, 65, 12, 0.09);
+  --bg: #f4f1ea;
+  --surface: #fbf9f4;
+  --text: #1c1b19;
+  --muted: #6e6a62;
+  --line: #dcd6cb;
+  --accent: #b4441c;
+  --accent-soft: #f3ded3;
+  /* --accent is 4.3:1 on --accent-soft, just under AA for small text, so
+     small text on that fill uses this slightly deeper shade. */
+  --accent-text: #a03b17;
 
-  --serif: 'Newsreader Variable', Newsreader, Georgia, 'Times New Roman', serif;
-  --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  /* Paper grain, light theme only: grey noise at 4% opacity. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='.33 .33 .33 0 0 .33 .33 .33 0 0 .33 .33 .33 0 0 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");
+
+  --serif: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --sans: 'Geist Variable', Geist, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'Geist Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
 
   --gap: 1.5rem;
+  --section-gap: clamp(6rem, 9vw, 8rem); /* 96–128px */
+  color-scheme: light;
 }
 
+/* Dark values are listed twice: once for the explicit choice, once for the
+   system preference when no choice has been made (and JS is off). */
 html[data-theme='dark'] {
-  --bg: #171512;
-  --ink: #ece7dd;
-  --ink-2: #aba498;
-  --rule: rgba(236, 231, 221, 0.22);
-  --accent: #f0894a;
-  --tint: rgba(240, 137, 74, 0.13);
+  --bg: #141311;
+  --surface: #1c1a17;
+  --text: #ece8e0;
+  --muted: #9a958b;
+  --line: #2e2b27;
+  --accent: #e8784a;
+  --accent-soft: #3a2418;
+  --accent-text: #e8784a;
+  --grain: none;
   color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) {
+    --bg: #141311;
+    --surface: #1c1a17;
+    --text: #ece8e0;
+    --muted: #9a958b;
+    --line: #2e2b27;
+    --accent: #e8784a;
+    --accent-soft: #3a2418;
+    --accent-text: #e8784a;
+    --grain: none;
+    color-scheme: dark;
+  }
 }
 
 *,
@@ -49,11 +82,17 @@ html {
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--ink);
+  background: var(--bg) var(--grain);
+  color: var(--text);
   font-family: var(--sans);
-  font-size: 1.0625rem;
+  font-size: 1.0625rem; /* 17px */
+  font-weight: 400;
   line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+::selection {
+  background: var(--accent-soft);
+  color: var(--text);
 }
 
 h1,
@@ -72,17 +111,31 @@ ul,
 ol {
   list-style: none;
 }
-b {
-  font-weight: 500;
+h1,
+h2,
+h3 {
+  text-wrap: balance;
 }
+p,
+dd {
+  max-width: 62ch;
+  text-wrap: pretty;
+}
+b {
+  font-weight: 600;
+}
+
+/* Links: text colour with a thin underline that turns accent on hover. */
 a {
-  color: var(--accent);
+  color: var(--text);
   text-decoration: underline;
+  text-decoration-color: var(--muted);
   text-decoration-thickness: 1px;
-  text-underline-offset: 0.2em;
+  text-underline-offset: 4px;
+  transition: text-decoration-color 0.15s;
 }
 a:hover {
-  text-decoration-thickness: 2px;
+  text-decoration-color: var(--accent);
 }
 button {
   font: inherit;
@@ -93,9 +146,11 @@ button {
   padding: 0;
   cursor: pointer;
 }
+/* One focus ring for everything that can take focus. */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
+  border-radius: 1px;
 }
 html:not(.js) .js-only,
 html.js .no-js-only {
@@ -108,7 +163,7 @@ html.js .no-js-only {
   left: 1rem;
   z-index: 10;
   padding: 0.4rem 0.75rem;
-  background: var(--ink);
+  background: var(--text);
   color: var(--bg);
 }
 .skip:focus {
@@ -132,23 +187,24 @@ html.js .no-js-only {
 .dates,
 .tag {
   font-family: var(--mono);
-  font-size: 0.75rem;
+  font-size: 0.75rem; /* 12px */
   font-weight: 400;
   line-height: 1.5;
-}
-.eyebrow {
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--ink-2);
+  color: var(--muted);
+}
+.dates,
+.year {
+  font-feature-settings: 'ss01', 'tnum';
 }
 .dates {
-  color: var(--ink-2);
   white-space: nowrap;
 }
 .meta {
   font-size: 0.9375rem;
   line-height: 1.5;
-  color: var(--ink-2);
+  color: var(--muted);
 }
 
 /* ---- Top bar ------------------------------------------------------------- */
@@ -156,54 +212,56 @@ html.js .no-js-only {
   display: flex;
   align-items: baseline;
   gap: 2rem;
-  padding: 1.4rem 0 1.1rem;
+  padding: 1.3rem 0 1.1rem;
   font-size: 0.9375rem;
 }
 .top-name {
   margin-right: auto;
   font-family: var(--serif);
-  font-size: 1.1875rem;
-  font-weight: 500;
-  color: var(--ink);
-  text-decoration: none;
+  font-size: 1.375rem;
+  line-height: 1.2;
+  text-decoration-color: transparent;
 }
 .top-nav {
   display: flex;
   gap: 1.6rem;
 }
 .top-nav a {
-  color: var(--ink);
-  text-decoration: none;
+  text-decoration-color: transparent;
 }
+.top-name:hover,
 .top-nav a:hover {
-  color: var(--accent);
+  text-decoration-color: var(--accent);
 }
 .theme {
   display: flex;
   align-items: baseline;
   gap: 0.4rem;
-  color: var(--ink-2);
+  color: var(--muted);
 }
 .theme button {
   padding: 0.35rem 0.1rem;
-  color: var(--ink-2);
+  color: var(--muted);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  transition: text-decoration-color 0.15s;
 }
 .theme button:hover {
-  color: var(--ink);
+  color: var(--text);
+  text-decoration-color: var(--accent);
 }
 .theme button[aria-pressed='true'] {
-  color: var(--ink);
-  text-decoration: underline;
-  text-decoration-color: var(--accent);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 0.3em;
+  color: var(--text);
+  text-decoration-color: var(--text);
 }
 
 /* ---- Hero ---------------------------------------------------------------- */
 .hero {
   align-items: center;
-  padding: 3.25rem 0 3.5rem;
-  border-top: 1px solid var(--ink);
+  padding: 3.5rem 0 1rem;
+  border-top: 1px solid var(--line);
 }
 .hero-text {
   grid-column: 1 / 8;
@@ -211,19 +269,25 @@ html.js .no-js-only {
 .hero-fig {
   grid-column: 8 / 13;
 }
-h1 {
+h1,
+h2 {
   font-family: var(--serif);
-  font-size: clamp(3.9rem, 8.6vw, 7.25rem);
-  font-weight: 500;
-  line-height: 0.9;
-  letter-spacing: -0.025em;
+  font-weight: 400;
+}
+h1 em,
+h2 em {
+  font-style: italic;
+}
+h1 {
+  font-size: clamp(3rem, 7vw, 5.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
 }
 .lede {
   max-width: 34rem;
   font-family: var(--serif);
-  font-size: clamp(1.4rem, 1.1rem + 1vw, 1.75rem);
-  line-height: 1.25;
-  letter-spacing: -0.005em;
+  font-size: clamp(1.5rem, 1.2rem + 1vw, 1.875rem);
+  line-height: 1.2;
 }
 .hero .lede {
   margin-top: 1.75rem;
@@ -231,8 +295,7 @@ h1 {
 .next {
   max-width: 31rem;
   margin-top: 1.1rem;
-  padding-left: 0.9rem;
-  border-left: 2px solid var(--accent);
+  color: var(--muted);
 }
 .links {
   display: flex;
@@ -243,18 +306,20 @@ h1 {
 }
 /* A contact value that is still a placeholder in content.ts. */
 .link-todo {
-  color: var(--ink-2);
-  border-bottom: 1px dashed var(--ink-2);
+  color: var(--muted);
+  border-bottom: 1px dashed var(--muted);
   cursor: help;
 }
 
-/* Hand-drawn strokes, shared by every diagram. */
+/* Hand-drawn strokes, shared by every diagram: text colour at 70%. */
 .sk {
   fill: none;
-  stroke: var(--ink);
+  stroke: var(--text);
+  stroke-opacity: 0.7;
   stroke-width: 1.3;
   stroke-linecap: round;
   stroke-linejoin: round;
+  transition: stroke 0.15s;
 }
 
 .thesis svg {
@@ -267,34 +332,35 @@ h1 {
 }
 .stage {
   cursor: pointer;
-  outline: none;
 }
 .stage-hit {
-  fill: transparent;
+  fill: var(--surface);
   transition: fill 0.15s;
 }
 .stage-n {
   font-family: var(--sans);
   font-size: 16px;
-  font-weight: 500;
-  fill: var(--ink);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  fill: var(--text);
 }
 .stage-s {
-  font-family: var(--mono);
-  font-size: 11.5px;
-  fill: var(--ink-2);
+  font-family: var(--sans);
+  font-size: 13px;
+  fill: var(--muted);
 }
 .stage:hover .stage-hit,
 .stage.is-on .stage-hit {
-  fill: var(--tint);
+  fill: var(--accent-soft);
 }
+.stage:hover .sk,
 .stage.is-on .sk,
 .stage:focus-visible .sk {
   stroke: var(--accent);
-  stroke-width: 1.8;
+  stroke-opacity: 1;
 }
-.stage.is-on .stage-n {
-  fill: var(--accent);
+.stage.is-on .sk {
+  stroke-width: 1.7;
 }
 .thesis-note {
   max-width: 400px;
@@ -302,10 +368,10 @@ h1 {
   margin-top: 0.9rem;
   font-size: 0.9375rem;
   line-height: 1.5;
-  color: var(--ink-2);
+  color: var(--muted);
 }
 .thesis-note.has-note {
-  color: var(--ink);
+  color: var(--text);
 }
 .thesis-list {
   max-width: 400px;
@@ -316,34 +382,34 @@ h1 {
   margin-top: 0.4rem;
 }
 
-/* ---- Sections ------------------------------------------------------------ */
+/* ---- Sections: a hairline and generous space, never a box ---------------- */
 .section {
-  padding-top: 5.5rem;
+  margin-top: var(--section-gap);
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--line);
 }
 h2 {
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--ink);
-  font-family: var(--serif);
-  font-size: 2.125rem;
-  font-weight: 500;
-  line-height: 1.15;
-  letter-spacing: -0.012em;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
 }
+/* Project titles and role titles. */
 h3 {
-  font-family: var(--serif);
+  font-family: var(--sans);
   font-size: 1.5rem;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.2;
-  letter-spacing: -0.008em;
+  letter-spacing: -0.01em;
 }
 h3.eyebrow {
   font-family: var(--mono);
   font-size: 0.75rem;
   font-weight: 400;
+  line-height: 1.5;
   letter-spacing: 0.06em;
 }
 
-/* Tags */
+/* Tags: hairline border, no fill. */
 .tags {
   display: flex;
   flex-wrap: wrap;
@@ -352,20 +418,22 @@ h3.eyebrow {
 }
 .tag {
   display: block;
-  padding: 0.12rem 0.5rem;
-  border: 1px solid var(--rule);
-  color: var(--ink-2);
+  padding: 0.16rem 0.5rem;
+  border: 1px solid var(--line);
 }
 /* A tag shared with other rows: hoverable. */
 .tag-link {
-  border-color: var(--ink-2);
-  color: var(--ink);
+  color: var(--text);
+  transition:
+    color 0.15s,
+    background-color 0.15s,
+    border-color 0.15s;
 }
 .tag-link:hover,
 .tag-link.is-on {
   border-color: var(--accent);
-  background: var(--tint);
-  color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-text);
 }
 /* While a tag is active, rows that do not use it step back. */
 [data-tags] {
@@ -377,7 +445,7 @@ h3.eyebrow {
 
 /* Selected work: featured project */
 .feature {
-  padding: 2.5rem 0 2.75rem;
+  padding: 2.75rem 0 3rem;
 }
 .feature-head {
   grid-column: 1 / 6;
@@ -386,18 +454,17 @@ h3.eyebrow {
   grid-column: 7 / 13;
 }
 .feature h3 {
-  margin-top: 0.5rem;
-  font-size: clamp(2rem, 1.4rem + 1.9vw, 2.75rem);
-  line-height: 1.05;
-  letter-spacing: -0.018em;
+  margin-top: 0.6rem;
+  font-size: clamp(1.75rem, 1.3rem + 1.4vw, 2.25rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 .outcome {
   margin-top: 0.9rem;
 }
 .feature .outcome {
-  font-family: var(--serif);
-  font-size: 1.3125rem;
-  line-height: 1.3;
+  font-size: 1.1875rem;
+  line-height: 1.45;
 }
 .feature .meta {
   margin-top: 1.1rem;
@@ -416,8 +483,8 @@ h3.eyebrow {
 /* Selected work: project rows */
 .project {
   align-items: start;
-  padding: 2rem 0;
-  border-top: 1px solid var(--rule);
+  padding: 2.25rem 0;
+  border-top: 1px solid var(--line);
 }
 .project-head {
   grid-column: 1 / 5;
@@ -446,17 +513,17 @@ h3.eyebrow {
   font-family: var(--sans);
   font-size: 12px;
   font-weight: 500;
-  fill: var(--ink);
+  fill: var(--text);
 }
 .mini-a {
-  font-family: var(--mono);
-  font-size: 9.5px;
-  fill: var(--accent);
+  font-family: var(--sans);
+  font-size: 10.5px;
+  fill: var(--muted);
 }
 
 .more {
   padding-top: 1.5rem;
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--line);
 }
 .more-row {
   display: flex;
@@ -470,9 +537,12 @@ h3.eyebrow {
 }
 
 /* Experience */
+.timeline {
+  padding-top: 0.75rem;
+}
 .timeline > li {
-  padding: 1.75rem 0;
-  border-top: 1px solid var(--rule);
+  padding: 2rem 0;
+  border-top: 1px solid var(--line);
 }
 .timeline > li:first-child {
   border-top: 0;
@@ -483,24 +553,27 @@ h3.eyebrow {
 .what {
   grid-column: 4 / 12;
 }
+.what h3 {
+  font-size: 1.25rem;
+}
 .year {
   display: block;
   font-family: var(--serif);
-  font-size: 1.5rem;
-  line-height: 1.2;
+  font-size: 1.75rem;
+  line-height: 1.1;
 }
 .what .meta {
-  margin: 0.2rem 0 0.6rem;
+  margin: 0.25rem 0 0.6rem;
 }
 
 /* Skills */
 .skills {
-  padding-top: 1rem;
+  padding-top: 1.5rem;
 }
 .skills > div {
   align-items: baseline;
-  padding: 0.85rem 0;
-  border-top: 1px solid var(--rule);
+  padding: 0.95rem 0;
+  border-top: 1px solid var(--line);
 }
 .skills > div:first-child {
   border-top: 0;
@@ -515,7 +588,7 @@ h3.eyebrow {
 /* Education & certificates */
 .edu {
   row-gap: 2.5rem;
-  padding-top: 1.75rem;
+  padding-top: 2.25rem;
 }
 .edu-a {
   grid-column: 1 / 7;
@@ -531,6 +604,9 @@ h3.eyebrow {
 }
 .plain.tight li + li {
   margin-top: 0.2rem;
+}
+.plain b {
+  font-weight: 500;
 }
 .plain .meta {
   display: block;
@@ -557,11 +633,14 @@ h3.eyebrow {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  margin-top: 6rem;
+  margin-top: var(--section-gap);
   padding: 1.1rem 0 2.5rem;
-  border-top: 1px solid var(--rule);
+  border-top: 1px solid var(--line);
   font-size: 0.875rem;
-  color: var(--ink-2);
+  color: var(--muted);
+}
+.foot a {
+  color: var(--muted);
 }
 
 /* ---- Fade-in on scroll (only with JS, only if motion is welcome) --------- */
@@ -581,9 +660,6 @@ h3.eyebrow {
 
 /* ---- Tablet and phone ---------------------------------------------------- */
 @media (max-width: 60rem) {
-  .hero-text {
-    grid-column: 1 / 8;
-  }
   .project-head {
     grid-column: 1 / 6;
   }
@@ -599,6 +675,9 @@ h3.eyebrow {
   }
 }
 @media (max-width: 46rem) {
+  :root {
+    --section-gap: 4rem; /* 64px */
+  }
   .wrap {
     padding: 0 1.25rem;
   }
@@ -609,7 +688,7 @@ h3.eyebrow {
     display: none;
   }
   .hero {
-    padding: 2rem 0 2.5rem;
+    padding: 2.25rem 0 0;
   }
   /* Every block takes the full width; the grid stays for vertical rhythm. */
   .hero-text,
@@ -631,10 +710,7 @@ h3.eyebrow {
     margin-top: 2.75rem;
   }
   .section {
-    padding-top: 4rem;
-  }
-  h2 {
-    font-size: 1.875rem;
+    padding-top: 1.25rem;
   }
   .feature {
     padding: 1.75rem 0 2.25rem;
@@ -658,12 +734,12 @@ h3.eyebrow {
   .edu {
     row-gap: 2rem;
   }
-  .foot {
-    margin-top: 4rem;
-  }
 }
 
 @media print {
+  body {
+    background-image: none;
+  }
   .top-nav,
   .theme,
   .skip,

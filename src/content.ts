@@ -6,6 +6,9 @@
    becomes hoverable and highlights the other rows that share it. A tag that
    appears once is printed as a plain label. Spelling must match exactly
    ("LLMs" and "LLM" would count as two different tags).
+
+   Section headings: wrap a word in *asterisks* to set it in italics,
+   e.g. 'Selected *work*'.
    ========================================================================== */
 
 export const site = {
@@ -72,7 +75,7 @@ export const hero = {
 
 /* ---- Selected work ------------------------------------------------------ */
 export const work = {
-  heading: 'Selected work',
+  heading: 'Selected *work*',
 
   // The first project, shown larger, with text instead of a diagram.
   featured: {
@@ -200,7 +203,7 @@ export const skills = {
 
 /* ---- Education & certificates ------------------------------------------- */
 export const education = {
-  heading: 'Education & certificates',
+  heading: 'Education & *certificates*',
   degreesLabel: 'Education',
   degrees: [
     {

@@ -14,7 +14,8 @@ const themeMeta = document.querySelector<HTMLMetaElement>('meta[name="theme-colo
 function setTheme(theme: string, persist: boolean) {
   root.dataset.theme = theme;
   for (const b of themeButtons) b.setAttribute('aria-pressed', String(b.dataset.themeSet === theme));
-  themeMeta?.setAttribute('content', theme === 'dark' ? '#171512' : '#f6f3ec');
+  // Browser chrome follows the page background, read from the CSS variable.
+  themeMeta?.setAttribute('content', getComputedStyle(root).getPropertyValue('--bg').trim());
   if (persist) {
     try {
       localStorage.setItem('theme', theme);
