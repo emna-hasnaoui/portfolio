@@ -1,0 +1,939 @@
+/* ==========================================================================
+   spec.css — the "printed technical specification" look.
+
+   ACCENT COLOUR: signal orange (#d9480f), not oscilloscope green.
+   Why: on warm paper, orange reads as a reviewer's red-pencil markup, which
+   is what an accent means in a printed spec (a change bar, a redline). Green
+   on cream loses contrast and turns muddy. Orange also carries over to the
+   blueprint revision, where it is the redline drawn on a navy sheet.
+   #d9480f is used for lines and marks; small accent TEXT uses the darker
+   --accent-ink (5.5:1 on paper) so it passes WCAG AA.
+   ========================================================================== */
+
+:root {
+  --paper: #f4f1ea;
+  --ink: #1b1915;
+  --ink-2: #5a554c;
+  --rule: rgba(27, 25, 21, 0.3);
+  --accent: #d9480f;
+  --accent-ink: #ad3a0b;
+  --tint: rgba(217, 72, 15, 0.075);
+
+  --serif: 'Source Serif 4 Variable', 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  --m: 9.5rem; /* margin column */
+  --g: 2.5rem; /* gutter between margin and body; the margin rule runs down its middle */
+  --body: 41rem; /* body column */
+  --bar: 2rem; /* running header / footer height */
+  --hair: 0.5px;
+}
+
+html[data-rev='blueprint'] {
+  --paper: #0b2135;
+  --ink: #e4f1f9;
+  --ink-2: #a3c2d6;
+  --rule: rgba(190, 225, 245, 0.34);
+  --accent: #ff8b47;
+  --accent-ink: #ff9d63;
+  --tint: rgba(255, 139, 71, 0.11);
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-padding-top: calc(var(--bar) + 1rem);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* Paper grain: fractal noise at very low alpha. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1 0 0 0 0 .09 0 0 0 0 .07 0 0 0 .11 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* Blueprint: the grain becomes a drafting grid. */
+html[data-rev='blueprint'] body::before {
+  background-image: linear-gradient(rgba(190, 225, 245, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(190, 225, 245, 0.045) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 0.5px;
+  text-underline-offset: 0.18em;
+}
+a:hover {
+  color: var(--accent-ink);
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  cursor: pointer;
+}
+p {
+  margin: 0 0 0.8rem;
+}
+b {
+  font-weight: 600;
+}
+.mono {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+}
+.accent {
+  color: var(--accent-ink);
+}
+html:not(.js) .js-only {
+  display: none;
+}
+
+.skip {
+  position: fixed;
+  top: -4rem;
+  left: 1rem;
+  z-index: 30;
+  padding: 0.4rem 0.7rem;
+  background: var(--ink);
+  color: var(--paper);
+  font: 500 0.75rem/1.2 var(--mono);
+}
+.skip:focus {
+  top: 0.4rem;
+  color: var(--paper);
+}
+
+/* ---- Running header and footer ----------------------------------------- */
+.rh,
+.rf {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  height: var(--bar);
+  background: var(--paper);
+  font: 500 0.6875rem/1 var(--mono);
+  letter-spacing: 0.01em;
+}
+.rh {
+  top: 0;
+  border-bottom: var(--hair) solid var(--rule);
+}
+.rf {
+  bottom: 0;
+  border-top: var(--hair) solid var(--rule);
+}
+.bar-in {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  height: 100%;
+  max-width: calc(var(--m) + var(--g) + var(--body) + 3rem);
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  white-space: nowrap;
+}
+.docnum {
+  text-decoration: none;
+}
+#rf-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rev {
+  color: var(--ink-2);
+}
+.rev button {
+  padding: 0.5rem 0.15rem;
+  color: var(--ink-2);
+}
+.rev button:hover {
+  color: var(--ink);
+}
+.rev button[aria-pressed='true'] {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.35em;
+}
+
+/* ---- Sheet: margin column + body column -------------------------------- */
+.sheet {
+  position: relative;
+  z-index: 1;
+  padding: var(--bar) 1.5rem calc(var(--bar) + 3rem);
+}
+.doc {
+  position: relative;
+  max-width: calc(var(--m) + var(--g) + var(--body));
+  margin: 0 auto;
+  padding-left: calc(var(--m) + var(--g));
+}
+/* The margin rule. */
+.doc::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--m) + var(--g) / 2);
+  border-left: var(--hair) solid var(--rule);
+}
+/* Anything with .m is set in the margin, level with the line it annotates
+   (absolute, with top left at its static position). */
+.m {
+  position: absolute;
+  left: 0;
+  width: var(--m);
+  text-align: right;
+}
+.num {
+  font-family: var(--mono);
+  font-weight: 400;
+}
+.when {
+  font: 400 0.71875rem/1.75 var(--mono);
+  color: var(--ink-2);
+  font-style: normal;
+}
+.mnote {
+  font: italic 400 0.78125rem/1.35 var(--serif);
+  color: var(--ink-2);
+  padding-top: 0.2em;
+}
+.mnote-low {
+  margin-top: 1.5rem;
+}
+
+/* ---- Cover page -------------------------------------------------------- */
+.cover {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 2 * var(--bar));
+  min-height: calc(100svh - 2 * var(--bar));
+  padding: 2.25rem 0 1rem;
+}
+.cover-id {
+  margin: 0 0 1.25rem;
+  text-align: right;
+}
+.cover-num {
+  display: block;
+  font: 500 1.0625rem/1.3 var(--mono);
+}
+.cover-type {
+  display: block;
+  font-style: italic;
+  color: var(--ink-2);
+}
+.cover-title {
+  padding: 2.25rem 0 2rem;
+  border-top: 2px solid var(--ink);
+  border-bottom: var(--hair) solid var(--ink);
+}
+h1 {
+  margin: 0 0 1.1rem;
+  font-size: clamp(2.05rem, 1.2rem + 3.6vw, 3.35rem);
+  font-weight: 600;
+  line-height: 1.06;
+  letter-spacing: -0.012em;
+}
+.cover-sub {
+  margin: 0;
+  font-size: 1.1875rem;
+  line-height: 1.4;
+}
+.cover-rel {
+  margin: 0.2rem 0 0;
+  font-size: 1.1875rem;
+  color: var(--ink-2);
+}
+.cover-status {
+  padding-top: 1.5rem;
+}
+.status {
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+.status th,
+.status td {
+  padding: 0.3rem 0;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: var(--hair) solid var(--rule);
+}
+.status th {
+  width: 7.5rem;
+  padding-right: 1rem;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+.status td {
+  min-width: 15rem;
+  font-weight: 500;
+}
+.keywords {
+  margin: 1rem 0 0;
+  font-size: 0.9375rem;
+  color: var(--ink-2);
+}
+.label {
+  margin-right: 0.6em;
+  font: 400 0.75rem/1 var(--mono);
+  color: var(--ink-2);
+}
+.wave {
+  margin: auto 0 0;
+  padding-top: 2.5rem;
+}
+.wave svg {
+  display: block;
+  width: 100%;
+  height: 3rem;
+}
+.wave-axis {
+  fill: none;
+  stroke: var(--rule);
+  stroke-width: 1;
+  stroke-dasharray: 1 5;
+  vector-effect: non-scaling-stroke;
+}
+.wave-line {
+  fill: none;
+  stroke: var(--ink);
+  stroke-opacity: 0.4;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.wave figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.35rem;
+  font: 400 0.6875rem/1.3 var(--mono);
+  color: var(--ink-2);
+}
+.cover-notice {
+  margin: 1.25rem 0 0;
+  padding-top: 0.6rem;
+  border-top: var(--hair) solid var(--rule);
+  font-size: 0.8125rem;
+  font-style: italic;
+  color: var(--ink-2);
+}
+
+/* ---- Contents ---------------------------------------------------------- */
+.toc {
+  padding-top: 3rem;
+}
+.toc ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.toc a {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.22rem 0;
+  text-decoration: none;
+}
+.toc-num {
+  flex: none;
+  width: 4.75rem;
+  font: 400 0.8125rem/1 var(--mono);
+}
+.toc-lead {
+  flex: 1;
+  min-width: 1.5rem;
+  border-bottom: 1px dotted var(--ink-2);
+  transform: translateY(-0.25em);
+}
+.toc-page {
+  flex: none;
+  width: 1.5rem;
+  text-align: right;
+  font: 400 0.8125rem/1 var(--mono);
+}
+
+/* ---- Clauses ----------------------------------------------------------- */
+/* The clause rule runs across margin and body. .clause must stay
+   unpositioned: margin items (.m) are placed relative to .doc. */
+.clause {
+  margin: 4rem 0 0 calc(-1 * (var(--m) + var(--g)));
+  padding: 1.1rem 0 0 calc(var(--m) + var(--g));
+  border-top: 1px solid var(--ink);
+}
+h2 {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+}
+h2.plain {
+  font-size: 1.25rem;
+  margin-bottom: 0.6rem;
+}
+h3 {
+  margin: 2.1rem 0 0.25rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+/* 2 References */
+.refs {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.refs li {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.3rem 0;
+}
+.ref-n {
+  flex: none;
+  width: 1.75rem;
+  font: 400 0.8125rem/2.1 var(--mono);
+}
+cite {
+  font-style: italic;
+}
+
+/* 3 Definitions */
+.defs {
+  display: grid;
+  grid-template-columns: 12.5rem 1fr;
+  margin: 0.6rem 0 0;
+  border-bottom: var(--hair) solid var(--rule);
+  font-size: 0.96875rem;
+  line-height: 1.45;
+}
+.defs dt,
+.defs dd {
+  margin: 0;
+  padding: 0.42rem 0;
+  border-top: var(--hair) solid var(--rule);
+}
+.defs dt {
+  padding-right: 1rem;
+  font-weight: 600;
+}
+.defs dt::after {
+  content: ':';
+}
+button.term {
+  font-weight: 600;
+  text-align: left;
+  border-bottom: 1px dotted var(--accent);
+}
+button.term:hover,
+button.term.is-active {
+  color: var(--accent-ink);
+}
+button.term[aria-pressed='true'] {
+  border-bottom-style: solid;
+}
+.xref {
+  margin-left: 0.5em;
+  font: 400 0.75rem/1 var(--mono);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+/* 4 / 5 entries */
+.entry {
+  margin: 1.5rem -0.75rem 0;
+  padding: 0.6rem 0.75rem 0.6rem;
+  transition: background-color 0.15s;
+}
+.entry h3 {
+  margin-top: 0;
+}
+.entry.is-traced,
+tr.is-traced {
+  background: var(--tint);
+}
+.entry-meta {
+  margin-bottom: 0.6rem;
+  font-style: italic;
+  color: var(--ink-2);
+}
+.alpha {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: alpha;
+}
+.alpha li {
+  position: static;
+  margin-bottom: 0.5rem;
+  padding-left: 1.75rem;
+  counter-increment: alpha;
+}
+.alpha li::before {
+  content: counter(alpha, lower-alpha) ')';
+  float: left;
+  width: 1.75rem;
+  margin-left: -1.75rem;
+  font: 400 0.8125rem/2.03 var(--mono);
+}
+
+/* Figures and tables */
+.fig {
+  margin: 1.6rem 0 0.9rem;
+}
+figcaption,
+caption {
+  font: 400 0.75rem/1.45 var(--mono);
+  text-align: left;
+}
+.fig figcaption {
+  margin-top: 0.6rem;
+}
+.fig figcaption.cap-top {
+  margin: 0 0 0.5rem;
+}
+caption {
+  caption-side: top;
+  padding-bottom: 0.5rem;
+}
+.pipe {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.pipe-v {
+  display: none;
+}
+.pipe .ln {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+.pipe .hd {
+  fill: var(--ink);
+}
+.pipe text {
+  font-family: var(--mono);
+  fill: var(--ink);
+}
+.pipe .lb {
+  font-size: 11.5px;
+  font-weight: 500;
+}
+.pipe .lb.emph {
+  fill: var(--accent-ink);
+}
+.pipe .sb {
+  font-size: 10px;
+  fill: var(--ink-2);
+}
+.pipe .in {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+}
+.pipe .it {
+  font-size: 10px;
+  fill: var(--accent-ink);
+}
+
+.tbl {
+  width: 100%;
+  margin: 1.4rem 0 0.5rem;
+  border-collapse: collapse;
+  font-size: 0.96875rem;
+  line-height: 1.4;
+}
+.tbl th,
+.tbl td {
+  padding: 0.45rem 1rem 0.45rem 0;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: var(--hair) solid var(--rule);
+}
+.tbl th:last-child,
+.tbl td:last-child {
+  padding-right: 0;
+}
+.tbl thead th {
+  font: 500 0.6875rem/1.4 var(--mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-top: 1px solid var(--ink);
+  border-bottom: var(--hair) solid var(--ink);
+}
+.tbl tbody th {
+  font-weight: 400;
+}
+.tbl tbody tr:last-child > * {
+  border-bottom: 1px solid var(--ink);
+}
+.tbl .mono {
+  line-height: 1.7;
+  white-space: nowrap;
+}
+.tbl-summary td:last-child {
+  white-space: normal;
+}
+.parts {
+  margin: 0.2rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  color: var(--ink-2);
+}
+.parts li::before {
+  content: '– ';
+}
+.addr {
+  overflow-wrap: anywhere;
+  white-space: normal !important;
+}
+
+/* STRIDE matrix (Table 4.1) */
+.stride-keys {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  border-top: 1px solid var(--ink);
+  border-left: var(--hair) solid var(--rule);
+}
+.stride-keys button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  min-height: 4.6rem;
+  padding: 0.5rem 0.55rem 0.55rem;
+  text-align: left;
+  border-right: var(--hair) solid var(--rule);
+  border-bottom: var(--hair) solid var(--rule);
+}
+.stride-l {
+  font: 500 1.5rem/1 var(--mono);
+}
+.stride-n {
+  font: 400 0.65625rem/1.3 var(--mono);
+  color: var(--ink-2);
+}
+.stride-keys button:hover .stride-l {
+  color: var(--accent-ink);
+}
+.stride-keys button[aria-pressed='true'] {
+  background: var(--tint);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.stride-keys button[aria-pressed='true'] .stride-l {
+  color: var(--accent-ink);
+}
+.stride-out {
+  padding: 0.65rem 0.75rem;
+  border: var(--hair) solid var(--rule);
+  border-top: 0;
+  border-bottom: 1px solid var(--ink);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+.stride-out p {
+  margin: 0;
+}
+.stride-out p + p {
+  margin-top: 0.4rem;
+}
+.stride-prompt {
+  font-style: italic;
+  color: var(--ink-2);
+}
+.stride-line b {
+  font: 500 0.8125rem/1 var(--mono);
+}
+.js .stride-out {
+  min-height: 5.1rem;
+}
+.js .stride-line {
+  display: none;
+}
+.js .stride-line.is-on {
+  display: block;
+  margin-top: 0;
+}
+
+/* Footnote references and their margin notes */
+.fn {
+  padding: 0 0.2em;
+  margin: 0 -0.05em;
+  font: 500 0.8125rem/1 var(--mono);
+  color: var(--accent-ink);
+}
+.fn sup {
+  font-size: 0.6875rem;
+  line-height: 0;
+}
+.fn[aria-expanded='true'] {
+  text-decoration: underline;
+}
+.fnote {
+  z-index: 3;
+  padding: 0.3rem 0 0.4rem 0.4rem;
+  border-top: 1px solid var(--accent);
+  background: var(--paper);
+  font: 400 0.78125rem/1.4 var(--serif);
+  color: var(--ink);
+  text-align: left;
+}
+.fnote-n {
+  font: 500 0.625rem/1 var(--mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+.js .fnote {
+  display: none;
+}
+.js .fnote.is-open {
+  display: block;
+}
+
+/* Cross-reference trace, drawn by spec.ts */
+.trace {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.trace path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+}
+.trace .dot,
+.trace .tip {
+  fill: var(--accent);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .trace path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: trace-draw 0.35s ease-out forwards;
+  }
+  .trace .tip {
+    opacity: 0;
+    animation: trace-tip 0.1s linear 0.3s forwards;
+  }
+}
+@keyframes trace-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes trace-tip {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Annex C */
+.pdf {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--ink);
+  font: 500 0.8125rem/1.3 var(--mono);
+  text-decoration: none;
+}
+.pdf:hover {
+  border-color: var(--accent);
+}
+.pdf-file {
+  font-weight: 400;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.colophon {
+  margin: 4rem 0 0;
+  padding-top: 0.6rem;
+  border-top: var(--hair) solid var(--rule);
+  font: 400 0.6875rem/1.4 var(--mono);
+  color: var(--ink-2);
+}
+
+/* ---- Narrow screens: the margin collapses inline ------------------------ */
+@media (max-width: 56rem) {
+  :root {
+    --m: 0rem;
+    --g: 0rem;
+  }
+  .doc::before {
+    display: none;
+  }
+  .m {
+    position: static;
+    width: auto;
+    text-align: left;
+  }
+  .num {
+    margin-right: 0.6em;
+  }
+  .num.wide {
+    display: none;
+  }
+  .when {
+    display: block;
+  }
+  .pdf {
+    flex-wrap: wrap;
+    gap: 0.2rem 1rem;
+  }
+  .mnote {
+    display: block;
+    margin: 0 0 0.45rem;
+    padding: 0 0 0 0.65rem;
+    border-left: 1px solid var(--rule);
+  }
+  .fnote,
+  .js .fnote.is-open {
+    margin: 0.4rem 0;
+    padding: 0.35rem 0 0.4rem 0.65rem;
+    border-top: 0;
+    border-left: 1px solid var(--accent);
+  }
+  .fnote {
+    display: block;
+  }
+}
+@media (max-width: 45rem) {
+  .pipe-h {
+    display: none;
+  }
+  .pipe-v {
+    display: block;
+  }
+  .defs {
+    display: block;
+  }
+  .defs dt {
+    padding-bottom: 0;
+  }
+  .defs dd {
+    padding-top: 0.1rem;
+    border-top: 0;
+  }
+  .col-period {
+    display: none;
+  }
+  .stride-keys button {
+    align-items: center;
+    min-height: 3rem;
+    padding: 0.7rem 0;
+  }
+  .stride-n {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .js .stride-out {
+    min-height: 7.5rem;
+  }
+}
+@media (max-width: 30rem) {
+  .sheet,
+  .bar-in {
+    padding-left: 1.125rem;
+    padding-right: 1.125rem;
+  }
+  .rh .wide {
+    display: none;
+  }
+  .cover-num {
+    font-size: 0.9375rem;
+  }
+  .status th {
+    width: 5.5rem;
+  }
+  .status td {
+    min-width: 0;
+  }
+  .wave figcaption span:first-child {
+    display: none;
+  }
+  .tbl th,
+  .tbl td {
+    padding-right: 0.6rem;
+  }
+}
+
+/* ---- Print: it is a document, after all -------------------------------- */
+@media print {
+  body::before,
+  .rh,
+  .rf,
+  .skip,
+  .trace,
+  .js-only {
+    display: none !important;
+  }
+  .sheet {
+    padding: 0;
+  }
+  .cover {
+    min-height: 0;
+  }
+  .clause,
+  .entry,
+  .fig,
+  .tbl {
+    break-inside: avoid;
+  }
+  .js .stride-line {
+    display: block;
+  }
+}
