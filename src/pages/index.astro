@@ -13,10 +13,11 @@ import sansUrl from '@fontsource-variable/geist/files/geist-latin-wght-normal.wo
 import monoUrl from '@fontsource/geist-mono/files/geist-mono-latin-400-normal.woff2?url';
 
 import Tags from '../components/Tags.astro';
-import MiniFlow from '../components/MiniFlow.astro';
+import Ref from '../components/Ref.astro';
 import ThesisFlow from '../components/ThesisFlow.astro';
 import { slug } from '../lib/slug';
 import { emph } from '../lib/emph';
+import { isTodo, usable } from '../lib/todo';
 import { site, contact, hero, work, experience, skills, education } from '../content';
 
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
@@ -29,14 +30,16 @@ for (const row of rows) for (const t of new Set(row.tags)) counts.set(t, (counts
 const shared = new Set([...counts].filter(([, n]) => n > 1).map(([t]) => t));
 const tagAttr = (tags: string[]) => tags.map(slug).join(' ');
 
-// Hero links. A placeholder value ("[...]") is printed without a link.
-const isPlaceholder = (v: string) => v.startsWith('[');
-const links = [
-  { label: 'GitHub', href: contact.github, external: true, placeholder: isPlaceholder(contact.github) },
-  { label: 'LinkedIn', href: contact.linkedin, external: true, placeholder: isPlaceholder(contact.linkedin) },
-  { label: 'Email', href: `mailto:${contact.email}`, external: false, placeholder: isPlaceholder(contact.email) },
-  { label: 'CV (PDF)', href: `${base}${contact.cv}`, external: false, placeholder: false },
+// Links whose address is still a TODO are dropped from the published build.
+const live = <T extends { href: string }>(list: T[]) => list.filter((l) => usable(l.href));
+const mailto = isTodo(contact.email) ? contact.email : `mailto:${contact.email}`;
+const cv = { label: 'CV (PDF)', href: `${base}${contact.cv}`, external: false };
+const profiles = [
+  { label: 'GitHub', href: contact.github, external: true },
+  { label: 'LinkedIn', href: contact.linkedin, external: true },
 ];
+const heroLinks = live([...profiles, { label: 'Email', href: mailto, external: false }, cv]);
+const contactLinks = live([...profiles, cv]);
 ---
 
 <!doctype html>
@@ -46,7 +49,7 @@ const links = [
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{site.title}</title>
     <meta name="description" content={site.description} />
-    <meta name="theme-color" content="#f4f1ea" />
+    <meta name="theme-color" content="#f5f4f0" />
     <meta property="og:title" content={site.title} />
     <meta property="og:description" content={site.description} />
     <meta property="og:type" content="profile" />
@@ -70,11 +73,11 @@ const links = [
   <body id="top">
     <a class="skip" href="#work">Skip to selected work</a>
 
-    <header class="wrap">
-      <div class="top">
+    <header class="bar" data-bar>
+      <div class="wrap top">
         <a class="top-name" href={base}>{site.name}</a>
         <nav class="top-nav" aria-label="Sections">
-          {site.nav.map((n) => <a href={n.href}>{n.label}</a>)}
+          {site.nav.map((n) => <a href={n.href} data-nav>{n.label}</a>)}
         </nav>
         <div class="theme" role="group" aria-label="Colour theme">
           <button type="button" data-theme-set="light" aria-pressed="true">Light</button>
@@ -90,15 +93,10 @@ const links = [
         <div class="hero-text">
           <h1>{site.name.split(' ').map((part, i) => <>{i > 0 && <br />}{i > 0 ? <em>{part}</em> : part}</>)}</h1>
           <p class="lede">{hero.sentence}</p>
+          <p class="interests"><span class="eyebrow">{hero.interestsLabel}</span>{hero.interests}</p>
           <p class="next">{hero.lookingFor}</p>
           <ul class="links">
-            {links.map((l) => (
-              <li>
-                {l.placeholder
-                  ? <span class="link-todo" title="Placeholder: set this in src/content.ts">{l.label}</span>
-                  : <a href={l.href} rel={l.external ? 'me noopener' : undefined}>{l.label}</a>}
-              </li>
-            ))}
+            {heroLinks.map((l) => <li><Ref {...l} /></li>)}
           </ul>
         </div>
         <div class="hero-fig" id="pipeline">
@@ -110,49 +108,63 @@ const links = [
       <section class="section" id="work" data-reveal>
         <h2 set:html={emph(work.heading)} />
 
-        <article class="feature grid" data-tags={tagAttr(work.featured.tags)}>
-          <div class="feature-head">
-            <p class="eyebrow">{work.featured.org}</p>
-            <h3>{work.featured.title}</h3>
-            <p class="outcome">{work.featured.outcome}</p>
-            <p class="meta">{work.featured.role}<br /><span class="dates">{work.featured.dates}</span></p>
+        <article class="feature" data-tags={tagAttr(work.featured.tags)}>
+          <p class="eyebrow feature-meta"><span class="dates">{work.featured.dates}</span><span>{work.featured.role}</span><span>{work.featured.org}</span></p>
+          <h3>{work.featured.title}</h3>
+          <p class="outcome">{work.featured.outcome}</p>
+          <dl class="details">
+            {work.featured.details.filter((d) => usable(d.text)).map((d) => (
+              <div>
+                <dt class="eyebrow">{d.label}</dt>
+                <dd>{isTodo(d.text) ? <span class="todo">{d.text}</span> : d.text}</dd>
+              </div>
+            ))}
+          </dl>
+          <div class="feature-foot">
             <Tags tags={work.featured.tags} shared={shared} />
-          </div>
-          <div class="feature-body">
-            <dl class="details">
-              {work.featured.details.map((d) => (
-                <div>
-                  <dt class="eyebrow">{d.label}</dt>
-                  <dd>{d.text}</dd>
-                </div>
-              ))}
-            </dl>
-            <p class="up"><a href="#pipeline">{work.featured.diagramLink}</a></p>
+            <ul class="row-links">
+              {live(work.featured.links).map((l) => <li><Ref {...l} external /></li>)}
+              <li><a href="#pipeline">{work.featured.diagramLink}</a></li>
+            </ul>
           </div>
         </article>
 
-        {work.projects.map((p, i) => (
+        {work.projects.map((p) => (
           <article class="project grid" data-tags={tagAttr(p.tags)}>
-            <div class="project-head">
-              <h3>{p.title}</h3>
-              <p class="meta">{p.role}<br /><span class="dates">{p.dates}</span></p>
-            </div>
-            <div class="project-body">
-              <p class="outcome">{p.outcome}</p>
+            <div class="row-side">
+              <p class="dates">{p.dates}</p>
+              <p class="eyebrow">{p.role}</p>
               <Tags tags={p.tags} shared={shared} />
             </div>
-            <div class="project-fig">
-              <MiniFlow stages={p.diagram} label={p.diagramLabel} seed={200 + i * 17} />
+            <div class="row-main">
+              <h3>{p.title}</h3>
+              <p class="outcome">{p.outcome}</p>
+              {usable(p.result) && (
+                <p class="result">
+                  <span class="eyebrow">{work.resultLabel}</span>
+                  {isTodo(p.result) ? <span class="todo">{p.result}</span> : p.result}
+                </p>
+              )}
+              {live(p.links).length > 0 && (
+                <ul class="row-links">
+                  {live(p.links).map((l) => <li><Ref {...l} external /></li>)}
+                </ul>
+              )}
             </div>
           </article>
         ))}
 
         <div class="more">
           {work.more.items.map((m) => (
-            <div class="more-row" data-tags={tagAttr(m.tags)}>
-              <p class="eyebrow">{work.more.label}</p>
-              <p class="more-text"><b>{m.title}</b>: {m.text} <span class="dates">{m.dates}</span></p>
-              <Tags tags={m.tags} shared={shared} />
+            <div class="more-row grid" data-tags={tagAttr(m.tags)}>
+              <div class="row-side">
+                <p class="eyebrow">{work.more.label}</p>
+                <p class="dates">{m.dates}</p>
+              </div>
+              <div class="row-main">
+                <p class="more-text"><b>{m.title}</b>: {m.text}</p>
+                <Tags tags={m.tags} shared={shared} />
+              </div>
             </div>
           ))}
         </div>
@@ -163,8 +175,8 @@ const links = [
         <h2 set:html={emph(experience.heading)} />
         <ol class="timeline">
           {experience.entries.map((e) => (
-            <li class="grid" data-tags={tagAttr(e.tags)}>
-              <p class="when"><span class="year">{e.year}</span><span class="dates">{e.dates}</span></p>
+            <li data-tags={tagAttr(e.tags)}>
+              <p class="when dates">{e.dates}</p>
               <div class="what">
                 <h3>{e.role}</h3>
                 <p class="meta">{e.org}</p>
@@ -176,69 +188,75 @@ const links = [
         </ol>
       </section>
 
-      <!-- ============================= Skills ============================= -->
-      <section class="section" id="skills" data-reveal>
-        <h2 set:html={emph(skills.heading)} />
-        <dl class="skills">
-          {skills.groups.map((g) => (
-            <div class="grid">
-              <dt class="eyebrow">{g.label}</dt>
-              <dd>{g.text}</dd>
-            </div>
-          ))}
-        </dl>
-      </section>
+      <!-- ============ Skills and Education, side by side on desktop ======== -->
+      <div class="pair grid">
+        <section class="section" id="skills" data-reveal>
+          <h2 set:html={emph(skills.heading)} />
+          <dl class="skills">
+            {skills.groups.map((g) => (
+              <div>
+                <dt class="eyebrow">{g.label}</dt>
+                <dd>{g.text}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
 
-      <!-- ==================== Education & certificates ==================== -->
-      <section class="section" id="education" data-reveal>
-        <h2 set:html={emph(education.heading)} />
-        <div class="grid edu">
-          <div class="edu-a">
-            <h3 class="eyebrow">{education.degreesLabel}</h3>
-            <ul class="plain">
-              {education.degrees.map((d) => (
-                <li>
-                  <b>{d.title}</b>
-                  <span class="meta">{d.place} <span class="dates">{d.dates}</span></span>
-                </li>
-              ))}
-            </ul>
+        <section class="section" id="education" data-reveal>
+          <h2 set:html={emph(education.heading)} />
+          <div class="edu">
+            <div>
+              <h3 class="eyebrow">{education.degreesLabel}</h3>
+              <ul class="plain">
+                {education.degrees.map((d) => (
+                  <li>
+                    <b>{d.title}</b>
+                    <span class="meta">{d.place} <span class="dates">{d.dates}</span></span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 class="eyebrow">{education.certificatesLabel}</h3>
+              <ul class="plain">
+                {education.certificates.map((c) => (
+                  <li>
+                    <b>{c.title}</b>
+                    <span class="meta">{c.detail}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h3 class="eyebrow">{education.activitiesLabel}</h3>
+              <ul class="plain tight">
+                {education.activities.map((a) => <li>{a}</li>)}
+              </ul>
+            </div>
+            <div>
+              <h3 class="eyebrow">{education.languagesLabel}</h3>
+              <ul class="plain langs">
+                {education.languages.map((l) => <li>{l.name} <span class="dates">{l.level}</span></li>)}
+              </ul>
+            </div>
           </div>
-          <div class="edu-b">
-            <h3 class="eyebrow">{education.certificatesLabel}</h3>
-            <ul class="plain">
-              {education.certificates.map((c) => (
-                <li>
-                  <b>{c.title}</b>
-                  <span class="meta">{c.detail}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div class="edu-a">
-            <h3 class="eyebrow">{education.activitiesLabel}</h3>
-            <ul class="plain tight">
-              {education.activities.map((a) => <li>{a}</li>)}
-            </ul>
-          </div>
-          <div class="edu-b">
-            <h3 class="eyebrow">{education.languagesLabel}</h3>
-            <ul class="plain langs">
-              {education.languages.map((l) => <li>{l.name} <span class="dates">{l.level}</span></li>)}
-            </ul>
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
       <!-- ============================= Contact ============================ -->
       <section class="section contact" id="contact" data-reveal>
-        <h2 set:html={emph(contact.heading)} />
-        <p class="lede">{contact.sentence}</p>
-        <p class="contact-mail">
-          {isPlaceholder(contact.email)
-            ? <span class="link-todo" title="Placeholder: set this in src/content.ts">{contact.email}</span>
-            : <a href={`mailto:${contact.email}`}>{contact.email}</a>}
-        </p>
+        <h2 class="eyebrow">{contact.heading}</h2>
+        <p class="closing">{contact.closing}</p>
+        {usable(contact.email) && (
+          <p class="contact-mail">
+            {isTodo(contact.email)
+              ? <span class="todo">{contact.email}</span>
+              : <a href={mailto}>{contact.email}</a>}
+          </p>
+        )}
+        <ul class="links">
+          {contactLinks.map((l) => <li><Ref {...l} /></li>)}
+        </ul>
       </section>
     </main>
 

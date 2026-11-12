@@ -1,0 +1,21 @@
+---
+// A link, or a marked placeholder when its address is still a {{TODO: ...}}.
+// Callers filter out TODO links for the published build (see lib/todo.ts),
+// so the placeholder branch is only ever seen while working on the site.
+import { isTodo } from '../lib/todo';
+
+interface Props {
+  label: string;
+  href: string;
+  external?: boolean;
+}
+const { label, href, external = false } = Astro.props;
+---
+
+{
+  isTodo(href) ? (
+    <span class="todo" title={`Set this in src/content.ts: ${href}`}>{label} · TODO</span>
+  ) : (
+    <a href={href} rel={external ? 'me noopener' : undefined}>{label}</a>
+  )
+}

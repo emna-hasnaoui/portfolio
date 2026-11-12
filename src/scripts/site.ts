@@ -1,8 +1,9 @@
-// Interactions for the portfolio. No dependencies. Only these four things:
+// Interactions for the portfolio. No dependencies. Only these five things:
 //   1. Light / Dark toggle
 //   2. Thesis pipeline: hover, focus or tap a stage to read its note
 //   3. Tech tags: hover a shared tag to highlight the other rows using it
 //   4. Gentle fade-in on scroll (skipped under prefers-reduced-motion)
+//   5. Sticky top bar: border once scrolled, current section underlined
 
 const root = document.documentElement;
 const $$ = <T extends Element>(sel: string, scope: ParentNode = document) => [...scope.querySelectorAll<T>(sel)];
@@ -118,3 +119,36 @@ if ('IntersectionObserver' in window && !matchMedia('(prefers-reduced-motion: re
 } else {
   for (const el of reveals) el.classList.add('is-in');
 }
+
+/* ---- 5. Sticky bar: hairline once scrolled, and the current section ------ */
+const bar = document.querySelector<HTMLElement>('[data-bar]');
+const navLinks = $$<HTMLAnchorElement>('a[data-nav]');
+const navTargets = navLinks
+  .map((a) => ({ a, el: document.getElementById(a.hash.slice(1)) }))
+  .filter((t): t is { a: HTMLAnchorElement; el: HTMLElement } => t.el !== null);
+
+function updateBar() {
+  bar?.classList.toggle('is-stuck', scrollY > 8);
+  // The current section is the last one whose top has passed the upper third
+  // of the screen; at the very bottom of the page it is always the last one.
+  const line = innerHeight * 0.35;
+  let current: HTMLAnchorElement | null = null;
+  for (const t of navTargets) if (t.el.getBoundingClientRect().top <= line) current = t.a;
+  if (navTargets.length && innerHeight + scrollY >= root.scrollHeight - 2) current = navTargets[navTargets.length - 1].a;
+  for (const a of navLinks) {
+    if (a === current) a.setAttribute('aria-current', 'true');
+    else a.removeAttribute('aria-current');
+  }
+}
+let barQueued = false;
+const queueBar = () => {
+  if (barQueued) return;
+  barQueued = true;
+  requestAnimationFrame(() => {
+    barQueued = false;
+    updateBar();
+  });
+};
+addEventListener('scroll', queueBar, { passive: true });
+addEventListener('resize', queueBar);
+updateBar();
