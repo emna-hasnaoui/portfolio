@@ -1,0 +1,41 @@
+---
+// The thesis pipeline in the hero: four stages, top to bottom.
+// Each stage can be hovered, focused or tapped; site.ts then shows its note.
+import { box, arrow } from '../lib/sketch';
+import { hero } from '../content';
+
+const { stages, label, hint } = hero.diagram;
+const W = 400;
+const pad = 6;
+const bh = 62;
+const gap = 30;
+const bw = W - 2 * pad;
+const H = stages.length * bh + (stages.length - 1) * gap + 2 * pad;
+const y = (i: number) => pad + i * (bh + gap);
+---
+
+<figure class="thesis" data-thesis>
+  <figcaption class="eyebrow">{label}</figcaption>
+  <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} role="group" aria-label={`${label}: ${stages.map((s) => s.name).join(', then ')}`}>
+    {
+      stages.map((s, i) => (
+        <>
+          <g class="stage" tabindex="0" role="button" aria-label={`${s.name}. ${s.note}`} data-note={s.note} data-name={s.name}>
+            <rect class="stage-hit" x={pad} y={y(i)} width={bw} height={bh} />
+            <path class="sk" d={box(11 + i, pad, y(i), bw, bh)} />
+            <text class="stage-n" x={pad + 18} y={y(i) + 27}>{s.name}</text>
+            <text class="stage-s" x={pad + 18} y={y(i) + 46}>{s.sub}</text>
+          </g>
+          {i < stages.length - 1 && <path class="sk" d={arrow(70 + i, W / 2, y(i) + bh + 5, W / 2, y(i + 1) - 5)} />}
+        </>
+      ))
+    }
+  </svg>
+  <p class="thesis-note" aria-live="polite">
+    <span class="js-only" data-thesis-out>{hint}</span>
+  </p>
+  <!-- Without JavaScript the notes are simply listed. -->
+  <ol class="thesis-list no-js-only">
+    {stages.map((s) => <li><b>{s.name}.</b> {s.note}</li>)}
+  </ol>
+</figure>

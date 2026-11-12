@@ -1,0 +1,25 @@
+---
+// Tech tags. A tag listed in `shared` (used by two or more rows) is a button
+// that highlights the other rows using it; any other tag is a plain label.
+import { slug } from '../lib/slug';
+
+interface Props {
+  tags: string[];
+  shared: Set<string>;
+}
+const { tags, shared } = Astro.props;
+---
+
+<ul class="tags" aria-label="Technologies">
+  {
+    tags.map((t) => (
+      <li>
+        {shared.has(t) ? (
+          <button type="button" class="tag tag-link" data-tag={slug(t)} aria-pressed="false" title={`Highlight other work using ${t}`}>{t}</button>
+        ) : (
+          <span class="tag">{t}</span>
+        )}
+      </li>
+    ))
+  }
+</ul>

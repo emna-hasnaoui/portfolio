@@ -1,412 +1,254 @@
 ---
-import '@fontsource-variable/source-serif-4/wght.css';
-import '@fontsource-variable/source-serif-4/wght-italic.css';
+import '@fontsource-variable/newsreader/wght.css';
+import '@fontsource/ibm-plex-sans/400.css';
+import '@fontsource/ibm-plex-sans/500.css';
 import '@fontsource/ibm-plex-mono/400.css';
-import '@fontsource/ibm-plex-mono/500.css';
-import '../styles/spec.css';
+import '../styles/site.css';
 
 // Preloaded so the first layout already has the real fonts (no swap re-layout).
-import serifUrl from '@fontsource-variable/source-serif-4/files/source-serif-4-latin-wght-normal.woff2?url';
-import serifItalicUrl from '@fontsource-variable/source-serif-4/files/source-serif-4-latin-wght-italic.woff2?url';
+import serifUrl from '@fontsource-variable/newsreader/files/newsreader-latin-wght-normal.woff2?url';
+import sansUrl from '@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2?url';
+import sans500Url from '@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-500-normal.woff2?url';
 import monoUrl from '@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2?url';
-import mono500Url from '@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2?url';
 
-import Pipeline from '../components/Pipeline.astro';
-import { rich } from '../lib/text';
-import { wavePath, WAVE_W, WAVE_H, WAVE_F0 } from '../lib/wave';
-import {
-  meta, clauses, scope, references, definitions, experience, strideMatrix,
-  projects, certificates, languages, contact, printable, colophon,
-} from '../content';
+import Tags from '../components/Tags.astro';
+import MiniFlow from '../components/MiniFlow.astro';
+import ThesisFlow from '../components/ThesisFlow.astro';
+import { slug } from '../lib/slug';
+import { site, contact, hero, work, experience, skills, education } from '../content';
 
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
-const docId = `${meta.docNumber} ${meta.version} (${meta.date})`;
-const pageTitle = `${meta.name} — ${meta.docType}`;
+const year = new Date().getFullYear();
 
-// Number the entries and build the skill → entries cross-reference index.
-const exp = experience.entries.map((e, i) => ({ ...e, num: `4.${i + 1}`, id: `c4-${i + 1}` }));
-const proj = projects.entries.map((e, i) => ({ ...e, num: `5.${i + 1}`, id: `c5-${i + 1}` }));
-const certs = certificates.entries.map((e, i) => ({ ...e, num: `6.${i + 1}`, id: `c6-${i + 1}` }));
+// A tag is "shared" (and therefore hoverable) when two or more rows use it.
+const rows = [work.featured, ...work.projects, ...work.more.items, ...experience.entries];
+const counts = new Map<string, number>();
+for (const row of rows) for (const t of new Set(row.tags)) counts.set(t, (counts.get(t) ?? 0) + 1);
+const shared = new Set([...counts].filter(([, n]) => n > 1).map(([t]) => t));
+const tagAttr = (tags: string[]) => tags.map(slug).join(' ');
 
-const usedIn = new Map<string, { num: string; id: string }[]>();
-for (const entry of [...exp, ...proj, ...certs]) {
-  for (const skill of entry.uses) {
-    if (!usedIn.has(skill)) usedIn.set(skill, []);
-    usedIn.get(skill)!.push({ num: entry.num, id: entry.id });
-  }
-}
-
-const annexTitle = (c: { num: string; qualifier: string; title: string }) =>
-  `${c.num}${c.qualifier ? ` (${c.qualifier})` : ''}: ${c.title}`;
-
-// "Pages" for the running footer and the table of contents.
-const pages = [
-  { id: 'cover', label: 'Cover', toc: null as null | { num: string; title: string } },
-  ...[clauses.scope, clauses.references, clauses.definitions, clauses.functional, clauses.tests, clauses.conformance].map((c) => ({
-    id: c.id,
-    label: `${c.num} ${c.title}`,
-    toc: { num: c.num, title: c.title },
-  })),
-  ...[clauses.annexA, clauses.annexB, clauses.annexC].map((c) => ({
-    id: c.id,
-    label: annexTitle(c),
-    toc: { num: c.num, title: `${c.qualifier ? `(${c.qualifier}): ` : ''}${c.title}` },
-  })),
-];
-const pageLabel = (id: string) => pages.find((p) => p.id === id)!.label;
-
+// Hero links. A placeholder value ("[...]") is printed without a link.
 const isPlaceholder = (v: string) => v.startsWith('[');
-const href = (c: { value: string; kind: string }) => (c.kind === 'email' ? `mailto:${c.value}` : c.value);
+const links = [
+  { label: 'GitHub', href: contact.github, external: true, placeholder: isPlaceholder(contact.github) },
+  { label: 'LinkedIn', href: contact.linkedin, external: true, placeholder: isPlaceholder(contact.linkedin) },
+  { label: 'Email', href: `mailto:${contact.email}`, external: false, placeholder: isPlaceholder(contact.email) },
+  { label: 'CV (PDF)', href: `${base}${contact.cv}`, external: false, placeholder: false },
+];
 ---
 
 <!doctype html>
-<html lang="en" data-rev="paper">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{pageTitle}</title>
-    <meta name="description" content={meta.description} />
-    <meta name="theme-color" content="#f4f1ea" />
-    <meta property="og:title" content={pageTitle} />
-    <meta property="og:description" content={meta.description} />
+    <title>{site.title}</title>
+    <meta name="description" content={site.description} />
+    <meta name="theme-color" content="#f6f3ec" />
+    <meta property="og:title" content={site.title} />
+    <meta property="og:description" content={site.description} />
     <meta property="og:type" content="profile" />
-    {[serifUrl, monoUrl, mono500Url, serifItalicUrl].map((u) => <link rel="preload" as="font" type="font/woff2" href={u} crossorigin />)}
+    {[serifUrl, sansUrl, sans500Url, monoUrl].map((u) => <link rel="preload" as="font" type="font/woff2" href={u} crossorigin />)}
     <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
     <script is:inline>
       // Runs before first paint: marks JS as available and applies the stored
-      // (or system-preferred) revision so the page never flashes the wrong one.
+      // (or system-preferred) theme so the page never flashes the wrong one.
       (function () {
         var root = document.documentElement;
         root.classList.add('js');
-        var rev = null;
-        try { rev = localStorage.getItem('rev'); } catch (e) {}
-        if (rev !== 'paper' && rev !== 'blueprint') {
-          rev = matchMedia('(prefers-color-scheme: dark)').matches ? 'blueprint' : 'paper';
+        var theme = null;
+        try { theme = localStorage.getItem('theme'); } catch (e) {}
+        if (theme !== 'light' && theme !== 'dark') {
+          theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
-        root.dataset.rev = rev;
+        root.dataset.theme = theme;
       })();
     </script>
   </head>
-  <body>
-    <a class="skip" href={`#${clauses.scope.id}`}>Skip to clause 1</a>
+  <body id="top">
+    <a class="skip" href="#work">Skip to selected work</a>
 
-    <header class="rh">
-      <div class="bar-in">
-        <a class="docnum" href="#cover" aria-label={`${docId}, back to cover`}>
-          {meta.docNumber} {meta.version}<span class="wide"> ({meta.date})</span>
-        </a>
-        <div class="rev" role="group" aria-label="Colour revision">
-          <span aria-hidden="true">[<span class="wide">REV: </span></span><button type="button" data-rev-set="paper" aria-pressed="true">PAPER</button><span aria-hidden="true"> | </span><button type="button" data-rev-set="blueprint" aria-pressed="false">BLUEPRINT</button><span aria-hidden="true">]</span>
+    <header class="wrap">
+      <div class="top">
+        <a class="top-name" href={base}>{site.name}</a>
+        <nav class="top-nav" aria-label="Sections">
+          {site.nav.map((n) => <a href={n.href}>{n.label}</a>)}
+        </nav>
+        <div class="theme" role="group" aria-label="Colour theme">
+          <button type="button" data-theme-set="light" aria-pressed="true">Light</button>
+          <span aria-hidden="true">/</span>
+          <button type="button" data-theme-set="dark" aria-pressed="false">Dark</button>
         </div>
       </div>
     </header>
 
-    <main class="sheet">
-      <div class="doc" id="doc">
-        <svg id="trace" class="trace" aria-hidden="true" focusable="false"></svg>
+    <main class="wrap">
+      <!-- ============================== Hero ============================== -->
+      <section class="hero grid">
+        <div class="hero-text">
+          <h1>{site.name.split(' ').map((part, i) => <>{i > 0 && <br />}{part}</>)}</h1>
+          <p class="lede">{hero.sentence}</p>
+          <p class="next">{hero.lookingFor}</p>
+          <ul class="links">
+            {links.map((l) => (
+              <li>
+                {l.placeholder
+                  ? <span class="link-todo" title="Placeholder: set this in src/content.ts">{l.label}</span>
+                  : <a href={l.href} rel={l.external ? 'me noopener' : undefined}>{l.label}</a>}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div class="hero-fig" id="pipeline">
+          <ThesisFlow />
+        </div>
+      </section>
 
-        <!-- ============================ Cover ============================ -->
-        <section class="cover" id="cover" data-page={pageLabel('cover')}>
-          <p class="cover-id">
-            <span class="cover-num">{docId}</span>
-            <span class="cover-type">{meta.docType}</span>
-          </p>
+      <!-- ========================== Selected work ========================= -->
+      <section class="section" id="work" data-reveal>
+        <h2>{work.heading}</h2>
 
-          <div class="cover-title">
-            <h1>{meta.name} —<br />{meta.docType}</h1>
-            <p class="cover-sub">{meta.title}</p>
-            <p class="cover-rel">(Release {meta.release})</p>
+        <article class="feature grid" data-tags={tagAttr(work.featured.tags)}>
+          <div class="feature-head">
+            <p class="eyebrow">{work.featured.org}</p>
+            <h3>{work.featured.title}</h3>
+            <p class="outcome">{work.featured.outcome}</p>
+            <p class="meta">{work.featured.role}<br /><span class="dates">{work.featured.dates}</span></p>
+            <Tags tags={work.featured.tags} shared={shared} />
           </div>
-
-          <div class="cover-status">
-            <span class="mnote m">{meta.coverMarginNote}</span>
-            <table class="status">
-              <tbody>
-                {meta.status.map((row) => (
-                  <tr>
-                    <th scope="row">{row.label}</th>
-                    <td class:list={{ accent: row.accent }}>{row.value}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <p class="keywords"><span class="label">Keywords</span> {meta.keywords.join(', ')}</p>
+          <div class="feature-body">
+            <dl class="details">
+              {work.featured.details.map((d) => (
+                <div>
+                  <dt class="eyebrow">{d.label}</dt>
+                  <dd>{d.text}</dd>
+                </div>
+              ))}
+            </dl>
+            <p class="up"><a href="#pipeline">{work.featured.diagramLink}</a></p>
           </div>
+        </article>
 
-          <figure class="wave">
-            <svg viewBox={`0 0 ${WAVE_W} ${WAVE_H}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
-              <path class="wave-axis" d={`M0 ${WAVE_H / 2}H${WAVE_W}`} />
-              <path id="wave-path" class="wave-line" d={wavePath(WAVE_F0)} />
-            </svg>
-            <figcaption aria-hidden="true">
-              <span>carrier, amplitude-modulated</span>
-              <span>f = <span id="wave-f">{WAVE_F0.toFixed(2)}</span> cycles / page width</span>
-            </figcaption>
-          </figure>
+        {work.projects.map((p, i) => (
+          <article class="project grid" data-tags={tagAttr(p.tags)}>
+            <div class="project-head">
+              <h3>{p.title}</h3>
+              <p class="meta">{p.role}<br /><span class="dates">{p.dates}</span></p>
+            </div>
+            <div class="project-body">
+              <p class="outcome">{p.outcome}</p>
+              <Tags tags={p.tags} shared={shared} />
+            </div>
+            <div class="project-fig">
+              <MiniFlow stages={p.diagram} label={p.diagramLabel} seed={200 + i * 17} />
+            </div>
+          </article>
+        ))}
 
-          <p class="cover-notice">{meta.coverNotice}</p>
-        </section>
-
-        <!-- =========================== Contents ========================== -->
-        <nav class="toc" aria-labelledby="toc-h">
-          <h2 id="toc-h" class="plain">Contents</h2>
-          <ol>
-            {pages.map((p, i) => p.toc && (
-              <li>
-                <a href={`#${p.id}`}>
-                  <span class="toc-num">{p.toc.num}</span>
-                  <span class="toc-title">{p.toc.title}</span>
-                  <span class="toc-lead" aria-hidden="true"></span>
-                  <span class="toc-page" aria-hidden="true">{i + 1}</span>
-                </a>
-              </li>
-            ))}
-          </ol>
-        </nav>
-
-        <!-- =========================== 1 Scope =========================== -->
-        <section class="clause" id={clauses.scope.id} data-page={pageLabel(clauses.scope.id)}>
-          <h2><span class="num m">{clauses.scope.num}</span>{clauses.scope.title}</h2>
-          {scope.paragraphs.map((p, i) => (
-            <p>{i === 0 && scope.marginNote && <span class="mnote m">{scope.marginNote}</span>}<Fragment set:html={rich(p)} /></p>
+        <div class="more">
+          {work.more.items.map((m) => (
+            <div class="more-row" data-tags={tagAttr(m.tags)}>
+              <p class="eyebrow">{work.more.label}</p>
+              <p class="more-text"><b>{m.title}</b>: {m.text} <span class="dates">{m.dates}</span></p>
+              <Tags tags={m.tags} shared={shared} />
+            </div>
           ))}
-        </section>
+        </div>
+      </section>
 
-        <!-- ========================= 2 References ======================== -->
-        <section class="clause" id={clauses.references.id} data-page={pageLabel(clauses.references.id)}>
-          <h2><span class="num m">{clauses.references.num}</span>{clauses.references.title}</h2>
-          <p>{references.intro}</p>
-
-          <h3><span class="num m">2.1</span>{references.normativeTitle}</h3>
-          <ol class="refs">
-            {references.normative.map((r, i) => (
-              <li>
-                <span class="ref-n">[{i + 1}]</span>
-                <span class="ref-b">
-                  <span class="when m">{r.period}</span>
-                  {r.institution}: <cite>“{r.title}”</cite>.
-                </span>
-              </li>
-            ))}
-          </ol>
-
-          <h3><span class="num m">2.2</span>{references.informativeTitle}</h3>
-          <ol class="refs">
-            {references.informative.map((r, i) => (
-              <li>
-                <span class="ref-n">[{references.normative.length + i + 1}]</span>
-                <span class="ref-b">{r}.</span>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        <!-- ========================= 3 Definitions ======================= -->
-        <section class="clause" id={clauses.definitions.id} data-page={pageLabel(clauses.definitions.id)}>
-          <h2><span class="num m">{clauses.definitions.num}</span>{clauses.definitions.title}</h2>
-          <p><span class="mnote m js-only">{definitions.marginNote}</span>{definitions.intro} <span class="js-only">{definitions.hint}</span></p>
-
-          {definitions.groups.map((group, gi) => (
-            <>
-              <h3><span class="num m">3.{gi + 1}</span>{group.title}</h3>
-              <dl class="defs">
-                {group.terms.map((t) => {
-                  const refs = usedIn.get(t.id);
-                  return (
-                    <>
-                      <dt>{refs ? <button type="button" class="term" data-skill={t.id} aria-pressed="false">{t.term}</button> : <span class="term">{t.term}</span>}</dt>
-                      <dd>
-                        {t.def}
-                        {refs && (
-                          <span class="xref">
-                            {definitions.usedInLabel}{' '}
-                            {refs.map((r, i) => <>{i > 0 && ', '}<a href={`#${r.id}`}>{r.num}</a></>)}
-                          </span>
-                        )}
-                      </dd>
-                    </>
-                  );
-                })}
-              </dl>
-            </>
+      <!-- =========================== Experience =========================== -->
+      <section class="section" id="experience" data-reveal>
+        <h2>{experience.heading}</h2>
+        <ol class="timeline">
+          {experience.entries.map((e) => (
+            <li class="grid" data-tags={tagAttr(e.tags)}>
+              <p class="when"><span class="year">{e.year}</span><span class="dates">{e.dates}</span></p>
+              <div class="what">
+                <h3>{e.role}</h3>
+                <p class="meta">{e.org}</p>
+                <p>{e.text}</p>
+                <Tags tags={e.tags} shared={shared} />
+              </div>
+            </li>
           ))}
-        </section>
+        </ol>
+      </section>
 
-        <!-- =================== 4 Functional Description ================== -->
-        <section class="clause" id={clauses.functional.id} data-page={pageLabel(clauses.functional.id)}>
-          <h2><span class="num m">{clauses.functional.num}</span>{clauses.functional.title}</h2>
-          <p>{experience.intro}</p>
-
-          {exp.map((e) => (
-            <article class="entry" id={e.id} data-uses={e.uses.join(' ')}>
-              <h3><span class="num m">{e.num}</span>{e.role}</h3>
-              <p class="entry-meta"><span class="when m">{e.period}</span>{e.org}</p>
-              <ol class="alpha">
-                {e.items.map((item, i) => (
-                  <li>{i === 0 && e.marginNote && <span class="mnote m mnote-low">{e.marginNote}</span>}<Fragment set:html={rich(item)} /></li>
-                ))}
-              </ol>
-
-              {e.stride && (
-                <figure class="fig stride" data-stride>
-                  <figcaption class="cap-top"><b>Table {e.num}</b> — {strideMatrix.caption}</figcaption>
-                  <div class="stride-keys" role="group" aria-label="STRIDE categories">
-                    {strideMatrix.categories.map((c) => (
-                      <button type="button" data-letter={c.letter} aria-pressed="false" aria-controls={`stride-${c.letter}`}>
-                        <span class="stride-l" aria-hidden="true">{c.letter}</span>
-                        <span class="stride-n">{c.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                  <div class="stride-out" aria-live="polite">
-                    <p class="stride-prompt js-only">{strideMatrix.prompt}</p>
-                    {strideMatrix.categories.map((c) => (
-                      <p class="stride-line" id={`stride-${c.letter}`} data-line={c.letter}>
-                        <b>{c.letter} · {c.name}.</b> {c.check}
-                      </p>
-                    ))}
-                  </div>
-                </figure>
-              )}
-
-              {e.figure && (
-                <figure class="fig">
-                  <Pipeline stages={e.figure.stages} label={`Figure ${e.num}: ${e.figure.caption}`} />
-                  <figcaption><b>Figure {e.num}</b> — {e.figure.caption}</figcaption>
-                </figure>
-              )}
-            </article>
+      <!-- ============================= Skills ============================= -->
+      <section class="section" id="skills" data-reveal>
+        <h2>{skills.heading}</h2>
+        <dl class="skills">
+          {skills.groups.map((g) => (
+            <div class="grid">
+              <dt class="eyebrow">{g.label}</dt>
+              <dd>{g.text}</dd>
+            </div>
           ))}
-        </section>
+        </dl>
+      </section>
 
-        <!-- ========================= 5 Test Results ====================== -->
-        <section class="clause" id={clauses.tests.id} data-page={pageLabel(clauses.tests.id)}>
-          <h2><span class="num m">{clauses.tests.num}</span>{clauses.tests.title}</h2>
-          <p>{projects.marginNote && <span class="mnote m">{projects.marginNote}</span>}{projects.intro}</p>
-
-          <table class="tbl tbl-summary">
-            <caption><b>Table 5.1</b> — {projects.summaryCaption}</caption>
-            <thead>
-              <tr>{projects.summaryHead.map((h, i) => <th scope="col" class:list={{ 'col-period': i === 2 }}>{h}</th>)}</tr>
-            </thead>
-            <tbody>
-              {proj.map((p) => (
-                <tr>
-                  <td class="mono"><a href={`#${p.id}`}>{p.num}</a></td>
-                  <td>{p.title}</td>
-                  <td class="mono col-period">{p.period}</td>
-                  <td class:list={['mono', { accent: p.outcomeAccent }]}>{p.outcome}</td>
-                </tr>
+      <!-- ==================== Education & certificates ==================== -->
+      <section class="section" id="education" data-reveal>
+        <h2>{education.heading}</h2>
+        <div class="grid edu">
+          <div class="edu-a">
+            <h3 class="eyebrow">{education.degreesLabel}</h3>
+            <ul class="plain">
+              {education.degrees.map((d) => (
+                <li>
+                  <b>{d.title}</b>
+                  <span class="meta">{d.place} <span class="dates">{d.dates}</span></span>
+                </li>
               ))}
-            </tbody>
-          </table>
-
-          {proj.map((p) => (
-            <article class="entry" id={p.id} data-uses={p.uses.join(' ')}>
-              <h3><span class="num m">{p.num}</span>{p.title}</h3>
-              <p class="entry-meta"><span class="when m">{p.period}</span>{p.context || 'Research project'}</p>
-              <p>{p.marginNote && <span class="mnote m mnote-low">{p.marginNote}</span>}<Fragment set:html={rich(p.summary)} /></p>
-              <figure class="fig">
-                <Pipeline stages={p.figure.stages} label={`Figure ${p.num}: ${p.figure.caption}`} />
-                <figcaption><b>Figure {p.num}</b> — {p.figure.caption}</figcaption>
-              </figure>
-            </article>
-          ))}
-        </section>
-
-        <!-- ========================= 6 Conformance ======================= -->
-        <section class="clause" id={clauses.conformance.id} data-page={pageLabel(clauses.conformance.id)}>
-          <h2><span class="num m">{clauses.conformance.num}</span>{clauses.conformance.title}</h2>
-          <p>{certificates.intro}</p>
-          <table class="tbl">
-            <caption><b>Table 6.1</b> — {certificates.caption}</caption>
-            <thead>
-              <tr>{certificates.head.map((h) => <th scope="col">{h}</th>)}</tr>
-            </thead>
-            <tbody>
-              {certs.map((c) => (
-                <tr id={c.id} data-uses={c.uses.join(' ')}>
-                  <td class="mono">{c.num}</td>
-                  <td>
-                    {c.title}
-                    {c.parts.length > 0 && (
-                      <ul class="parts">{c.parts.map((part) => <li>{part}</li>)}</ul>
-                    )}
-                  </td>
-                  <td>{c.issuer}</td>
-                </tr>
+            </ul>
+          </div>
+          <div class="edu-b">
+            <h3 class="eyebrow">{education.certificatesLabel}</h3>
+            <ul class="plain">
+              {education.certificates.map((c) => (
+                <li>
+                  <b>{c.title}</b>
+                  <span class="meta">{c.detail}</span>
+                </li>
               ))}
-            </tbody>
-          </table>
-        </section>
+            </ul>
+          </div>
+          <div class="edu-a">
+            <h3 class="eyebrow">{education.activitiesLabel}</h3>
+            <ul class="plain tight">
+              {education.activities.map((a) => <li>{a}</li>)}
+            </ul>
+          </div>
+          <div class="edu-b">
+            <h3 class="eyebrow">{education.languagesLabel}</h3>
+            <ul class="plain langs">
+              {education.languages.map((l) => <li>{l.name} <span class="dates">{l.level}</span></li>)}
+            </ul>
+          </div>
+        </div>
+      </section>
 
-        <!-- ============================ Annex A ========================== -->
-        <section class="clause" id={clauses.annexA.id} data-page={pageLabel(clauses.annexA.id)}>
-          <h2><span class="num m wide">A</span>{annexTitle(clauses.annexA)}</h2>
-          <table class="tbl">
-            <caption><b>Table A.1</b> — {languages.caption}</caption>
-            <thead>
-              <tr>{languages.head.map((h) => <th scope="col">{h}</th>)}</tr>
-            </thead>
-            <tbody>
-              {languages.entries.map((l) => (
-                <tr>
-                  <td>{l.name}</td>
-                  <td class="mono">{l.level}</td>
-                  <td>{l.band}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-
-        <!-- ============================ Annex B ========================== -->
-        <section class="clause" id={clauses.annexB.id} data-page={pageLabel(clauses.annexB.id)}>
-          <h2><span class="num m wide">B</span>{annexTitle(clauses.annexB)}</h2>
-          <p>{contact.intro}</p>
-          <table class="tbl">
-            <caption><b>Table B.1</b> — {contact.caption}</caption>
-            <thead>
-              <tr>{contact.head.map((h) => <th scope="col">{h}</th>)}</tr>
-            </thead>
-            <tbody>
-              {contact.entries.map((c) => (
-                <tr>
-                  <th scope="row">{c.label}</th>
-                  <td class="mono addr">
-                    {isPlaceholder(c.value) ? c.value : <a href={href(c)} rel="me noopener">{c.value}</a>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-
-        <!-- ============================ Annex C ========================== -->
-        <section class="clause" id={clauses.annexC.id} data-page={pageLabel(clauses.annexC.id)}>
-          <h2><span class="num m wide">C</span>{annexTitle(clauses.annexC)}</h2>
-          <p>{printable.text}</p>
-          <p>
-            <a class="pdf" href={`${base}${printable.path}`} download>
-              <span>{printable.linkLabel}</span>
-              <span class="pdf-file">{printable.path}</span>
-            </a>
-          </p>
-        </section>
-
-        <p class="colophon">{colophon}</p>
-      </div>
+      <!-- ============================= Contact ============================ -->
+      <section class="section contact" id="contact" data-reveal>
+        <h2>{contact.heading}</h2>
+        <p class="lede">{contact.sentence}</p>
+        <p class="contact-mail">
+          {isPlaceholder(contact.email)
+            ? <span class="link-todo" title="Placeholder: set this in src/content.ts">{contact.email}</span>
+            : <a href={`mailto:${contact.email}`}>{contact.email}</a>}
+        </p>
+      </section>
     </main>
 
-    <footer class="rf">
-      <div class="bar-in">
-        <span id="rf-title">{pages[0].label}</span>
-        <span class="rf-count">Page <span id="rf-page">1</span> of {pages.length}</span>
+    <footer class="wrap">
+      <div class="foot">
+        <p>© {year} {site.name}</p>
+        <p><a href="#top">Back to top</a></p>
       </div>
     </footer>
 
     <script>
-      import '../scripts/spec.ts';
+      import '../scripts/site.ts';
     </script>
   </body>
 </html>
